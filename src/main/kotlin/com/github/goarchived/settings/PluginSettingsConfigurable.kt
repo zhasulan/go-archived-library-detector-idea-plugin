@@ -72,7 +72,12 @@ class PluginSettingsConfigurable(private val project: Project) : Configurable {
 
     override fun isModified(): Boolean {
         val settings = PluginSettings.getInstance(project)
-        return tokenField.text != settings.githubToken ||
+
+        val pwd: CharArray = tokenField.password
+        val typedToken = String(pwd)
+        pwd.fill('\u0000') // безопасное обнуление
+
+        return typedToken != settings.githubToken ||
                 checkOnOpenCheckbox.isSelected != settings.checkOnFileOpen ||
                 showInlineCheckbox.isSelected != settings.showInlineWarnings ||
                 cacheDurationField.text != settings.cacheDurationHours.toString() ||

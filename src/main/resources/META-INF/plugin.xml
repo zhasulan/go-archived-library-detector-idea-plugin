@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>com.github.yourname.go-archived-library-detector</id>
     <name>Go Archived Library Detector</name>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 
     <vendor email="zhasulan87@gmail.com" url="https://github.com/zhasulan/go-archived-library-detector-idea-plugin">
         Zhasulan Berdibekov
@@ -38,7 +38,15 @@
 
         <h3>Version 1.0.1</h3>
         <ul>
-            <li>Fix some warnings with URL</li>
+            <li>Replaced deprecated <code>URL(String)</code> usage with <code>URI.toURL()</code></li>
+            <li>Improved HTTP connection initialization for Java 21+</li>
+        </ul>
+
+        <h3>Version 1.0.2</h3>
+        <ul>
+            <li>Removed deprecated <code>JPasswordField.getText()</code> usage</li>
+            <li>Switched to secure password handling via <code>getPassword()</code></li>
+            <li>Improved compatibility with IntelliJ Plugin Verifier 2025</li>
         </ul>
     ]]></change-notes>
 

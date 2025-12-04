@@ -26,7 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2024-12-04
 
 ### Fixed
-- Fixed URL warnings
+- Removed usage of deprecated URL(String) constructor in ArchiveCheckService.
+- Migrated HTTP initialization to the recommended URI.create(...).toURL() API.
+- Improved compatibility with Java 21+ and IntelliJ Platform 2025 networking requirements.
+- Minor internal refactor of GitHub repository status checks.
+- Improved stability of API requests and updated error-handling behaviour.
+
+## [1.0.2] - 2024-12-04
+
+### Fix deprecated API usage
+- Replaced deprecated JPasswordField.getText() with secure getPassword() in PluginSettingsConfigurable.isModified().
+- Ensured safe handling of password char[] with explicit memory cleanup.
+- Improved compatibility with IntelliJ Platform 2025+ Plugin Verifier.
+- Removed deprecated URL(String) constructor usage in ArchiveCheckService (replaced with URI.toURL()).
+- General code cleanup and internal stability improvements.
 
 ### Features
 - 🔍 Real-time import analysis
