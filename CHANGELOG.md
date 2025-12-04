@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clear cache action
 - Configurable cache duration and batch size
 
+## [1.0.1] - 2024-12-04
+
+### Fixed
+- Fixed URL warnings
+
 ### Features
 - 🔍 Real-time import analysis
 - ⚡ Performance optimized with smart caching

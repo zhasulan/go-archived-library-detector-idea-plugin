@@ -7,7 +7,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 data class RepositoryStatus(
@@ -93,8 +93,8 @@ class ArchiveCheckService(private val project: Project) {
 
     private fun checkGitHubRepository(owner: String, repo: String): RepositoryStatus? {
         return try {
-            val url = URL("https://api.github.com/repos/$owner/$repo")
-            val connection = url.openConnection() as HttpURLConnection
+            val uri = URI.create("https://api.github.com/repos/$owner/$repo")
+            val connection = uri.toURL().openConnection() as HttpURLConnection
 
             connection.requestMethod = "GET"
             connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
