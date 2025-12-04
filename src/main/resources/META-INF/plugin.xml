@@ -1,56 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <idea-plugin>
-    <id>com.example.go-archived-library-detector</id>
+    <id>com.github.yourname.go-archived-library-detector</id>
     <name>Go Archived Library Detector</name>
-    <vendor email="support@example.com" url="https://www.example.com">Example</vendor>
+
+    <vendor email="zhasulan87@gmail.com" url="https://github.com/zhasulan/go-archived-library-detector-idea-plugin">
+        Zhasulan Berdibekov
+    </vendor>
 
     <description><![CDATA[
-    Детектор архивированных Go библиотек для GoLand.
+        <h1>Go Archived Library Detector</h1>
+        <p>Automatically detects archived and unmaintained Go libraries in your projects.</p>
 
-    Этот плагин помогает отслеживать устаревшие и архивированные Go библиотеки прямо в вашем коде:
-    - Автоматически проверяет статус GitHub репозиториев
-    - Подсвечивает импорты архивированных библиотек
-    - Показывает предупреждения в редакторе
-    - Предоставляет информацию о дате архивации
+        <h2>Features:</h2>
+        <ul>
+            <li>🔍 Automatic detection of archived GitHub repositories</li>
+            <li>⚠️ Visual warnings in editor for archived imports</li>
+            <li>📊 Batch checking for all project imports</li>
+            <li>💾 Smart caching to minimize API calls</li>
+            <li>🌍 Support for multiple languages (English, Russian)</li>
+            <li>⚡ Background updates with configurable refresh rates</li>
+        </ul>
 
-    Поддерживает библиотеки из GitHub и других популярных хостингов.
-  ]]></description>
+        <h2>Usage:</h2>
+        <p>The plugin works automatically. Open any Go file and it will check imports.</p>
+        <p>Configure via: <b>Settings → Tools → Archived Library Detector</b></p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <h3>Version 1.0.0</h3>
+        <ul>
+            <li>Initial release</li>
+            <li>GitHub repository status detection</li>
+            <li>Smart caching system</li>
+            <li>i18n support (English, Russian)</li>
+        </ul>
+    ]]></change-notes>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>org.jetbrains.plugins.go</depends>
 
+    <resource-bundle>messages.GoArchivedBundle</resource-bundle>
+
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Инспекция для проверки архивированных библиотек -->
+        <notificationGroup
+                id="Go Archived Detector"
+                displayType="BALLOON"/>
+
         <localInspection
                 language="go"
-                displayName="Archived Go Library"
-                groupName="Go"
+                key="inspection.archived.library.name"
+                groupKey="inspection.group.name"
                 enabledByDefault="true"
                 level="WARNING"
                 implementationClass="com.github.goarchived.inspection.ArchivedLibraryInspection"/>
 
-        <!-- Аннотатор для подсветки в редакторе -->
         <annotator
                 language="go"
                 implementationClass="com.github.goarchived.annotator.ArchivedLibraryAnnotator"/>
 
-        <!-- Настройки плагина -->
         <projectConfigurable
                 parentId="tools"
                 instance="com.github.goarchived.settings.PluginSettingsConfigurable"
                 id="com.github.goarchived.settings.PluginSettingsConfigurable"
-                displayName="Archived Library Detector"/>
+                key="settings.display.name"/>
 
         <projectService
-                serviceImplementation="com.github.goarchived.ArchiveCheckService"/>
+                serviceImplementation="com.github.goarchived.service.ArchiveCheckService"/>
+
+        <projectService
+                serviceImplementation="com.github.goarchived.service.LocalCacheService"/>
+
+        <applicationService
+                serviceImplementation="com.github.goarchived.settings.PluginSettings"/>
     </extensions>
 
     <actions>
         <action
-                id="com.example.goarchived.CheckAllImports"
+                id="com.github.goarchived.CheckAllImports"
                 class="com.github.goarchived.action.CheckAllImportsAction"
-                text="Check All Go Imports for Archived Libraries"
-                description="Проверить все импорты на архивированные библиотеки">
+                icon="AllIcons.Actions.Find">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
+        <action
+                id="com.github.goarchived.ClearCache"
+                class="com.github.goarchived.action.ClearCacheAction"
+                icon="AllIcons.Actions.GC">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>

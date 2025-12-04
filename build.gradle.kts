@@ -27,6 +27,11 @@ dependencies {
         instrumentationTools()
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
+
+    testImplementation("junit:junit:4.13.2")      // чтобы видеть org.junit.Assert и т.п.
+    testRuntimeOnly("junit:junit:4.13.2")         // нужно рантайму IntelliJ test framework
+    testImplementation("org.opentest4j:opentest4j:1.3.0")
+    testImplementation(kotlin("test"))
 }
 
 kotlin {
@@ -41,6 +46,10 @@ intellijPlatform {
             sinceBuild = "242"
             untilBuild = "252.*"
         }
+    }
+
+    publishing {
+        token = providers.gradleProperty("intellijPlatformPublishingToken")
     }
 }
 

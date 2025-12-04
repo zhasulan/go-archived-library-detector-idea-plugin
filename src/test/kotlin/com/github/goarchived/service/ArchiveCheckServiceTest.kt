@@ -56,7 +56,7 @@ class ArchiveCheckServiceTest : BasePlatformTestCase() {
         val results = service.checkRepositoryBatch(imports)
 
         assertEquals(imports.size, results.size)
-        results.forEach { (_, status) ->
+        results.forEach { (path, status) ->
             assertNotNull(status)
         }
     }

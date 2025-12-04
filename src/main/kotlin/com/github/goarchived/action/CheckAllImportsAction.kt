@@ -8,6 +8,7 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -29,13 +30,14 @@ class CheckAllImportsAction : AnAction() {
         ) {
             override fun run(indicator: ProgressIndicator) {
                 val service = project.service<ArchiveCheckService>()
-                val psiManager = PsiManager.getInstance(project)
 
-                // Get all Go files
-                val goFiles = FileTypeIndex.getFiles(
-                    GoFileType.INSTANCE,
-                    GlobalSearchScope.projectScope(project)
-                )
+                // Get all Go files with read access
+                val goFiles = ReadAction.compute<Collection<com.intellij.openapi.vfs.VirtualFile>, Throwable> {
+                    FileTypeIndex.getFiles(
+                        GoFileType.INSTANCE,
+                        GlobalSearchScope.projectScope(project)
+                    )
+                }
 
                 indicator.isIndeterminate = false
                 val archivedLibraries = mutableSetOf<String>()
@@ -48,14 +50,16 @@ class CheckAllImportsAction : AnAction() {
                     indicator.fraction = index.toDouble() / goFiles.size / 2
                     indicator.text = "Scanning ${virtualFile.name}..."
 
-                    val psiFile = psiManager.findFile(virtualFile) as? GoFile ?: return@forEachIndexed
+                    val imports = ReadAction.compute<List<String>, Throwable> {
+                        val psiManager = PsiManager.getInstance(project)
+                        val psiFile = psiManager.findFile(virtualFile) as? GoFile ?: return@compute emptyList()
 
-                    psiFile.imports.forEach { importSpec ->
-                        val importPath = importSpec.path?.replace("\"", "") ?: return@forEach
-                        if (importPath.contains(".")) {
-                            allImports.add(importPath)
+                        psiFile.imports.mapNotNull { importSpec ->
+                            importSpec.path?.replace("\"", "")?.takeIf { it.contains(".") }
                         }
                     }
+
+                    allImports.addAll(imports)
                 }
 
                 // Check imports in batch

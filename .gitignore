@@ -22,3 +22,5 @@ Thumbs.db
 # Build artifacts
 *.zip
 *.jar
+
+.intellijPlatform
