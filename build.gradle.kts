@@ -48,6 +48,12 @@ intellijPlatform {
         }
     }
 
+    pluginVerification {
+        ides {
+            recommended() // подтянет IDE по since/until-build из plugin.xml
+        }
+    }
+
     publishing {
         token = providers.gradleProperty("intellijPlatformPublishingToken")
     }
