@@ -44,8 +44,8 @@ jobs:
       - name: Run tests
         run: ./gradlew test --no-daemon
 
-      - name: Run Plugin Verifier
-        run: ./gradlew runPluginVerifier --no-daemon
+      - name: Verify plugin
+        run: ./gradlew verifyPlugin --no-daemon
 
       - name: Upload build reports
         if: failure()
