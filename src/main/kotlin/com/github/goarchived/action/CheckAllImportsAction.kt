@@ -30,6 +30,7 @@ class CheckAllImportsAction : AnAction() {
         ) {
             override fun run(indicator: ProgressIndicator) {
                 val service = project.service<ArchiveCheckService>()
+                val psiManager = PsiManager.getInstance(project)
 
                 // Get all Go files with read access
                 val goFiles = ReadAction.compute<Collection<com.intellij.openapi.vfs.VirtualFile>, Throwable> {
@@ -41,6 +42,7 @@ class CheckAllImportsAction : AnAction() {
 
                 indicator.isIndeterminate = false
                 val archivedLibraries = mutableSetOf<String>()
+                val staleLibraries = mutableSetOf<String>()
                 val allImports = mutableSetOf<String>()
 
                 // Collect all imports
@@ -50,16 +52,16 @@ class CheckAllImportsAction : AnAction() {
                     indicator.fraction = index.toDouble() / goFiles.size / 2
                     indicator.text = "Scanning ${virtualFile.name}..."
 
-                    val imports = ReadAction.compute<List<String>, Throwable> {
-                        val psiManager = PsiManager.getInstance(project)
-                        val psiFile = psiManager.findFile(virtualFile) as? GoFile ?: return@compute emptyList()
+                    ReadAction.run<Throwable> {
+                        val psiFile = psiManager.findFile(virtualFile) as? GoFile ?: return@run
 
-                        psiFile.imports.mapNotNull { importSpec ->
-                            importSpec.path?.replace("\"", "")?.takeIf { it.contains(".") }
+                        psiFile.imports.forEach { importSpec ->
+                            val importPath = importSpec.path?.replace("\"", "") ?: return@forEach
+                            if (importPath.contains(".")) {
+                                allImports.add(importPath)
+                            }
                         }
                     }
-
-                    allImports.addAll(imports)
                 }
 
                 // Check imports in batch
@@ -69,30 +71,68 @@ class CheckAllImportsAction : AnAction() {
                 results.forEach { (path, status) ->
                     if (status.isArchived) {
                         archivedLibraries.add(path)
+                    } else if (status.isStale) {
+                        staleLibraries.add(path)
                     }
                 }
 
                 // Show results
-                showResults(project, archivedLibraries)
+                showResults(project, archivedLibraries, staleLibraries)
             }
         })
     }
 
-    private fun showResults(project: Project, libraries: Set<String>) {
-        val message = if (libraries.isEmpty()) {
-            GoArchivedBundle.message("message.no.archived.found")
-        } else {
-            buildString {
-                append(GoArchivedBundle.message("message.found.archived", libraries.size))
-                append("\n\n")
-                libraries.forEach { append("• $it\n") }
-            }
+    private fun showResults(project: Project, archived: Set<String>, stale: Set<String>) {
+        val totalIssues = archived.size + stale.size
+
+        if (totalIssues == 0) {
+            NotificationGroupManager.getInstance()
+                .getNotificationGroup("Go Archived Detector")
+                .createNotification(
+                    GoArchivedBundle.message("message.no.archived.found"),
+                    NotificationType.INFORMATION
+                )
+                .notify(project)
+            return
         }
 
-        val notificationType = if (libraries.isEmpty()) {
-            NotificationType.INFORMATION
-        } else {
-            NotificationType.WARNING
+        val settings = com.github.goarchived.settings.PluginSettings.getInstance(project)
+        val service = project.service<ArchiveCheckService>()
+
+        val message = buildString {
+            append(GoArchivedBundle.message("message.found.archived", totalIssues))
+            append("\n\n")
+
+            if (archived.isNotEmpty()) {
+                append("⚠️ Archived (${archived.size}):\n")
+                archived.forEach { path ->
+                    append("  • $path")
+
+                    // Добавить звезды, если включено
+                    if (settings.showStarsCount) {
+                        service.checkRepository(path)?.stars?.let { stars ->
+                            append(" (⭐ $stars)")
+                        }
+                    }
+                    append("\n")
+                }
+                append("\n")
+            }
+
+            if (stale.isNotEmpty()) {
+                append("⏰ Stale (${stale.size}):\n")
+                stale.forEach { path ->
+                    append("  • $path")
+
+                    // Добавить звезды, если включено
+                    if (settings.showStarsCount) {
+                        service.checkRepository(path)?.stars?.let { stars ->
+                            append(" (⭐ $stars)")
+                        }
+                    }
+                    append("\n")
+                }
+            }
         }
 
         NotificationGroupManager.getInstance()
@@ -100,7 +140,7 @@ class CheckAllImportsAction : AnAction() {
             .createNotification(
                 GoArchivedBundle.message("notification.update.available.title"),
                 message,
-                notificationType
+                NotificationType.WARNING
             )
             .notify(project)
     }

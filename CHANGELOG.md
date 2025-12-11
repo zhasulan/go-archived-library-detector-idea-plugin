@@ -8,9 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- GitLab repository support
-- Bitbucket repository support
 - Alternative library suggestions
+- Custom repository lists (whitelist/blacklist)
+- Enhanced notification system
+- Export scan results to file
 
 ## [1.0.0] - 2024-12-06
 
@@ -26,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🌍 Internationalization support (English and Russian)
 - 🛠️ Quick fix to remove archived imports
 - 🧹 Clear cache action
-- ⚙️ Flexible configuration options (cache duration, batch size, update interval)## [1.0.1] - 2024-12-04
+- ⚙️ Flexible configuration options (cache duration, batch size, update interval)
 
 ## [1.0.1] - 2024-12-04
 
@@ -45,6 +46,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved compatibility with IntelliJ Platform 2025+ Plugin Verifier.
 - Removed deprecated URL(String) constructor usage in ArchiveCheckService (replaced with URI.toURL()).
 - General code cleanup and internal stability improvements.
+
+## [1.0.4] - 2024-12-11
+
+### Added
+- 🌐 Multi-platform repository support:
+  - GitHub public and private repositories
+  - GitLab (public, private, and corporate instances)
+  - Bitbucket (public and private repositories)
+- 🏭 Platform checker factory pattern for extensibility
+- 🔧 Configurable platform-specific settings
+
+### Fixed
+- 🐛 Fixed critical PluginException: "Range must be inside element being annotated"
+  - Added comprehensive validation checks before creating annotations
+  - Improved element validity checks
+  - Added document bounds validation
+  - Enhanced stability during async annotation operations
+- ⚡ Improved annotator reliability and performance
+
+### Changed
+- 🔄 Refactored ArchiveCheckService to support multiple platforms
+- 📦 Reorganized platform-specific checkers into separate modules
+- 🌍 Updated localization strings for multi-platform support
 
 ## [1.0.3] - 2024-12-05
 
@@ -97,9 +121,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-### [1.1.0] - Planned
-- Support for GitLab repositories
-- Support for Bitbucket repositories
+### [1.1.0] - In Progress
+- ✅ Support for GitLab repositories (completed in 1.0.4)
+- ✅ Support for Bitbucket repositories (completed in 1.0.4)
 - Alternative library suggestions
 - Library health metrics
 - Custom repository lists
@@ -115,8 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [1.1.0] - Planned for Q1 2025
 
 #### Planned Features
-- GitLab repository support
-- Bitbucket repository support
+- ✅ GitLab repository support (completed in 1.0.4)
+- ✅ Bitbucket repository support (completed in 1.0.4)
 - Custom repository lists (whitelist/blacklist)
 - Enhanced notification system
 - Improved error messages
@@ -165,6 +189,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Status | Notes |
 |---------|------|--------|-------|
+| 1.0.4 | 2024-12-11 | Stable | Multi-platform support + critical bug fix |
+| 1.0.3 | 2024-12-05 | Stable | CI/CD automation |
+| 1.0.2 | 2024-12-04 | Stable | API deprecation fixes |
+| 1.0.1 | 2024-12-04 | Stable | Java 21+ compatibility |
 | 1.0.0 | 2024-12-06 | Stable | Initial public release |
 | 0.9.0 | 2024-11-15 | Beta | Beta testing phase |
 | 0.1.0 | 2024-11-01 | Alpha | Internal testing |

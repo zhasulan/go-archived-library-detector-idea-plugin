@@ -1,31 +1,35 @@
 package com.github.goarchived.service
 
+import com.github.goarchived.platform.PlatformCheckerFactory
 import com.github.goarchived.settings.PluginSettings
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import java.net.HttpURLConnection
-import java.net.URI
 import java.util.concurrent.TimeUnit
 
 data class RepositoryStatus(
     val isArchived: Boolean,
     val archivedAt: String? = null,
+    val lastCommitDate: String? = null,
     val lastChecked: Long = System.currentTimeMillis(),
-    val description: String? = null
+    val description: String? = null,
+    val isStale: Boolean = false, // true if last commit > 10 years ago
+    val stars: Int? = null, // количество звезд репозитория
+    val visibility: String? = null, // "public" или "private"
+    val error: String? = null // описание ошибки (401, 404, timeout и т.д.)
 )
 
 @Service(Service.Level.PROJECT)
 class ArchiveCheckService(private val project: Project) {
-    private val gson = Gson()
     private val localCache: LocalCacheService by lazy {
         project.service<LocalCacheService>()
     }
 
-    fun checkRepository(importPath: String): RepositoryStatus? {
-        // 1. Проверяем локальный кэш
+    /**
+     * Check only the cache without making API calls.
+     * Returns cached status if valid, null otherwise.
+     */
+    fun getCachedStatus(importPath: String): RepositoryStatus? {
         val cached = localCache.getCached(importPath)
         val settings = PluginSettings.getInstance(project)
         val cacheValidityMs = TimeUnit.HOURS.toMillis(settings.cacheDurationHours.toLong())
@@ -35,27 +39,56 @@ class ArchiveCheckService(private val project: Project) {
             return RepositoryStatus(
                 isArchived = cached.isArchived,
                 archivedAt = cached.archivedAt,
+                lastCommitDate = cached.lastCommitDate,
                 lastChecked = cached.lastChecked,
-                description = cached.description
+                description = cached.description,
+                isStale = cached.isStale,
+                stars = cached.stars,
+                visibility = cached.visibility,
+                error = cached.error
             )
         }
+        return null
+    }
 
-        // 2. Проверяем известные архивированные библиотеки
-        if (localCache.isKnownArchived(importPath)) {
-            return RepositoryStatus(isArchived = true)
+    fun checkRepository(importPath: String): RepositoryStatus? {
+        // 1. Проверяем локальный кэш
+        val cachedStatus = getCachedStatus(importPath)
+        if (cachedStatus != null) {
+            return cachedStatus
         }
 
-        // 3. Парсим путь импорта
+        // 2. Парсим путь импорта
         val repoInfo = parseImportPath(importPath) ?: return null
 
-        // 4. Проверяем через API
-        val status = checkGitHubRepository(repoInfo.owner, repoInfo.repo)
+        // 3. Получаем чекер для платформы
+        val checker = PlatformCheckerFactory.createChecker(
+            platform = repoInfo.platform,
+            host = repoInfo.host,
+            project = project
+        ) ?: return null
+
+        // 4. Получаем токен для платформы
+        val token = PlatformCheckerFactory.getToken(
+            platform = repoInfo.platform,
+            host = repoInfo.host,
+            project = project
+        )
+
+        // 5. Проверяем через API платформы
+        val status = checker.checkRepository(repoInfo.owner, repoInfo.repo, token)
         if (status != null) {
             localCache.updateCache(importPath, CachedRepository(
                 path = importPath,
                 isArchived = status.isArchived,
                 archivedAt = status.archivedAt,
-                description = status.description
+                lastCommitDate = status.lastCommitDate,
+                lastChecked = status.lastChecked,
+                description = status.description,
+                isStale = status.isStale,
+                stars = status.stars,
+                visibility = status.visibility,
+                error = status.error
             ))
         }
 
@@ -79,63 +112,62 @@ class ArchiveCheckService(private val project: Project) {
         return results
     }
 
-    private data class RepoInfo(val owner: String, val repo: String)
+    private data class RepoInfo(
+        val platform: String,
+        val host: String?,
+        val owner: String,
+        val repo: String
+    )
 
     private fun parseImportPath(importPath: String): RepoInfo? {
+        // GitHub
         val githubPattern = Regex("^github\\.com/([^/]+)/([^/]+)(/.*)?$")
-        val match = githubPattern.find(importPath) ?: return null
-
-        return RepoInfo(
-            owner = match.groupValues[1],
-            repo = match.groupValues[2]
-        )
-    }
-
-    private fun checkGitHubRepository(owner: String, repo: String): RepositoryStatus? {
-        return try {
-            val uri = URI.create("https://api.github.com/repos/$owner/$repo")
-            val connection = uri.toURL().openConnection() as HttpURLConnection
-
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
-
-            val settings = PluginSettings.getInstance(project)
-            if (settings.githubToken.isNotEmpty()) {
-                connection.setRequestProperty("Authorization", "Bearer ${settings.githubToken}")
-            }
-
-            connection.connectTimeout = 5000
-            connection.readTimeout = 5000
-
-            when (connection.responseCode) {
-                200 -> {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    val json = gson.fromJson(response, JsonObject::class.java)
-
-                    val isArchived = json.get("archived")?.asBoolean ?: false
-                    val updatedAt = json.get("updated_at")?.asString
-                    val description = json.get("description")?.asString
-
-                    RepositoryStatus(
-                        isArchived = isArchived,
-                        archivedAt = if (isArchived) updatedAt else null,
-                        description = description
-                    )
-                }
-                403 -> {
-                    // Rate limit exceeded
-                    notifyRateLimit()
-                    null
-                }
-                else -> null
-            }
-        } catch (e: Exception) {
-            null
+        githubPattern.find(importPath)?.let { match ->
+            return RepoInfo(
+                platform = "github",
+                host = null,
+                owner = match.groupValues[1],
+                repo = match.groupValues[2]
+            )
         }
-    }
 
-    private fun notifyRateLimit() {
-        // TODO: Show notification about rate limit
+        // GitLab.com
+        val gitlabPattern = Regex("^gitlab\\.com/([^/]+)/([^/]+)(/.*)?$")
+        gitlabPattern.find(importPath)?.let { match ->
+            return RepoInfo(
+                platform = "gitlab",
+                host = "https://gitlab.com",
+                owner = match.groupValues[1],
+                repo = match.groupValues[2]
+            )
+        }
+
+        // Corporate GitLab
+        val corporateGitlabPattern = Regex("^([^/]+)/([^/]+)/([^/]+)(/.*)?$")
+        corporateGitlabPattern.find(importPath)?.let { match ->
+            val potentialHost = match.groupValues[1]
+            if (potentialHost.contains("gitlab")) {
+                return RepoInfo(
+                    platform = "gitlab",
+                    host = "https://$potentialHost",
+                    owner = match.groupValues[2],
+                    repo = match.groupValues[3]
+                )
+            }
+        }
+
+        // Bitbucket
+        val bitbucketPattern = Regex("^bitbucket\\.org/([^/]+)/([^/]+)(/.*)?$")
+        bitbucketPattern.find(importPath)?.let { match ->
+            return RepoInfo(
+                platform = "bitbucket",
+                host = null,
+                owner = match.groupValues[1],
+                repo = match.groupValues[2]
+            )
+        }
+
+        return null
     }
 
     fun clearCache() {

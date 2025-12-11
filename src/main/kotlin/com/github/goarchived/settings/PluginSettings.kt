@@ -10,14 +10,24 @@ import com.intellij.openapi.project.Project
 )
 class PluginSettings : PersistentStateComponent<PluginSettings.State> {
 
+    data class GitLabHostConfig(
+        var host: String = "",
+        var token: String = ""
+    )
+
     data class State(
         var githubToken: String = "",
+        var bitbucketToken: String = "",
         var checkOnFileOpen: Boolean = true,
         var showInlineWarnings: Boolean = true,
         var cacheDurationHours: Int = 24,
         var batchCheckSize: Int = 50,
         var enableBackgroundUpdates: Boolean = true,
-        var updateIntervalHours: Int = 12
+        var updateIntervalHours: Int = 12,
+        var usePrivateRepos: Boolean = false,
+        var staleYearsThreshold: Int = 10,
+        var gitlabHosts: MutableList<GitLabHostConfig> = mutableListOf(),
+        var showStarsCount: Boolean = true
     )
 
     private var myState = State()
@@ -28,6 +38,10 @@ class PluginSettings : PersistentStateComponent<PluginSettings.State> {
     var githubToken: String
         get() = myState.githubToken
         set(value) { myState.githubToken = value }
+
+    var bitbucketToken: String
+        get() = myState.bitbucketToken
+        set(value) { myState.bitbucketToken = value }
 
     var checkOnFileOpen: Boolean
         get() = myState.checkOnFileOpen
@@ -52,6 +66,43 @@ class PluginSettings : PersistentStateComponent<PluginSettings.State> {
     var updateIntervalHours: Int
         get() = myState.updateIntervalHours
         set(value) { myState.updateIntervalHours = value }
+
+    var usePrivateRepos: Boolean
+        get() = myState.usePrivateRepos
+        set(value) { myState.usePrivateRepos = value }
+
+    var staleYearsThreshold: Int
+        get() = myState.staleYearsThreshold
+        set(value) { myState.staleYearsThreshold = value }
+
+    var gitlabHosts: MutableList<GitLabHostConfig>
+        get() = myState.gitlabHosts
+        set(value) { myState.gitlabHosts = value }
+
+    var showStarsCount: Boolean
+        get() = myState.showStarsCount
+        set(value) { myState.showStarsCount = value }
+
+    // Helper methods
+    val customGitLabHosts: List<String>
+        get() = gitlabHosts.map { it.host }
+
+    fun getGitLabToken(host: String): String {
+        return gitlabHosts.find { it.host == host }?.token ?: ""
+    }
+
+    fun addGitLabHost(host: String, token: String) {
+        val existing = gitlabHosts.find { it.host == host }
+        if (existing != null) {
+            existing.token = token
+        } else {
+            gitlabHosts.add(GitLabHostConfig(host, token))
+        }
+    }
+
+    fun removeGitLabHost(host: String) {
+        gitlabHosts.removeIf { it.host == host }
+    }
 
     companion object {
         fun getInstance(project: Project): PluginSettings =

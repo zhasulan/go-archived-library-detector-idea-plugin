@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>com.github.yourname.go-archived-library-detector</id>
     <name>Go Archived Library Detector</name>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
 
     <vendor email="zhasulan87@gmail.com" url="https://github.com/zhasulan/go-archived-library-detector-idea-plugin">
         Zhasulan Berdibekov
@@ -10,11 +10,12 @@
 
     <description><![CDATA[
         <h1>Go Archived Library Detector</h1>
-        <p>Automatically detects archived and unmaintained Go libraries in your projects.</p>
+        <p>Automatically detects archived and unmaintained Go libraries in your projects across multiple platforms.</p>
 
         <h2>Features:</h2>
         <ul>
-            <li>🔍 Automatic detection of archived GitHub repositories</li>
+            <li>🌐 Multi-platform support: GitHub, GitLab (public/private/corporate), Bitbucket (public/private)</li>
+            <li>🔍 Automatic detection of archived repositories</li>
             <li>⚠️ Visual warnings in editor for archived imports</li>
             <li>📊 Batch checking for all project imports</li>
             <li>💾 Smart caching to minimize API calls</li>
@@ -28,18 +29,19 @@
     ]]></description>
 
     <change-notes><![CDATA[
-        <h3>Version 1.0.0</h3>
+        <h3>Version 1.0.4</h3>
         <ul>
-            <li>Initial release</li>
-            <li>GitHub repository status detection</li>
-            <li>Smart caching system</li>
-            <li>i18n support (English, Russian)</li>
+            <li><b>Multi-platform support:</b> Added support for GitLab (public, private, corporate) and Bitbucket (public, private) repositories</li>
+            <li><b>Critical bug fix:</b> Fixed PluginException "Range must be inside element being annotated"</li>
+            <li>Added comprehensive validation checks for annotations</li>
+            <li>Improved annotator reliability and performance</li>
+            <li>Refactored service architecture to support multiple platforms</li>
+            <li>Platform checker factory pattern for extensibility</li>
         </ul>
 
-        <h3>Version 1.0.1</h3>
+        <h3>Version 1.0.3</h3>
         <ul>
-            <li>Replaced deprecated <code>URL(String)</code> usage with <code>URI.toURL()</code></li>
-            <li>Improved HTTP connection initialization for Java 21+</li>
+            <li>Add CICD actions for release</li>
         </ul>
 
         <h3>Version 1.0.2</h3>
@@ -49,9 +51,18 @@
             <li>Improved compatibility with IntelliJ Plugin Verifier 2025</li>
         </ul>
 
-        <h3>Version 1.0.3</h3>
+        <h3>Version 1.0.1</h3>
         <ul>
-            <li>Add CICD actions for release</li>
+            <li>Replaced deprecated <code>URL(String)</code> usage with <code>URI.toURL()</code></li>
+            <li>Improved HTTP connection initialization for Java 21+</li>
+        </ul>
+
+        <h3>Version 1.0.0</h3>
+        <ul>
+            <li>Initial release</li>
+            <li>GitHub repository status detection</li>
+            <li>Smart caching system</li>
+            <li>i18n support (English, Russian)</li>
         </ul>
     ]]></change-notes>
 
@@ -89,23 +100,27 @@
         <projectService
                 serviceImplementation="com.github.goarchived.service.LocalCacheService"/>
 
-        <applicationService
+        <projectService
                 serviceImplementation="com.github.goarchived.settings.PluginSettings"/>
     </extensions>
 
     <actions>
-        <action
-                id="com.github.goarchived.CheckAllImports"
-                class="com.github.goarchived.action.CheckAllImportsAction"
-                icon="AllIcons.Actions.Find">
+        <group id="com.github.goarchived.ActionsGroup"
+               text="Archived Library Detector"
+               description="Actions for detecting archived Go libraries"
+               icon="AllIcons.Actions.Find"
+               popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
-        </action>
 
-        <action
-                id="com.github.goarchived.ClearCache"
-                class="com.github.goarchived.action.ClearCacheAction"
-                icon="AllIcons.Actions.GC">
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
-        </action>
+            <action
+                    id="com.github.goarchived.CheckAllImports"
+                    class="com.github.goarchived.action.CheckAllImportsAction"
+                    icon="AllIcons.Actions.Find"/>
+
+            <action
+                    id="com.github.goarchived.ClearCache"
+                    class="com.github.goarchived.action.ClearCacheAction"
+                    icon="AllIcons.Actions.GC"/>
+        </group>
     </actions>
 </idea-plugin>

@@ -12,8 +12,13 @@ data class CachedRepository(
     val path: String,
     val isArchived: Boolean,
     val archivedAt: String? = null,
+    val lastCommitDate: String? = null,
     val lastChecked: Long = System.currentTimeMillis(),
-    val description: String? = null
+    val description: String? = null,
+    val isStale: Boolean = false,
+    val stars: Int? = null, // количество звезд репозитория
+    val visibility: String? = null, // "public" или "private"
+    val error: String? = null // описание ошибки
 )
 
 @Service(Service.Level.PROJECT)
@@ -22,12 +27,6 @@ class LocalCacheService(private val project: Project) {
     private val cacheFile: File by lazy {
         File(project.basePath, ".idea/go-archived-cache.json")
     }
-
-    // Предустановленный список популярных архивированных библиотек
-    private val knownArchivedLibraries = mapOf(
-        "github.com/go-sql-driver/mysql" to false, // Пример активной
-        // Добавьте сюда известные архивированные библиотеки
-    )
 
     fun loadCache(): Map<String, CachedRepository> {
         if (!cacheFile.exists()) {
@@ -70,9 +69,5 @@ class LocalCacheService(private val project: Project) {
         if (cacheFile.exists()) {
             cacheFile.delete()
         }
-    }
-
-    fun isKnownArchived(importPath: String): Boolean {
-        return knownArchivedLibraries[importPath] == true
     }
 }
